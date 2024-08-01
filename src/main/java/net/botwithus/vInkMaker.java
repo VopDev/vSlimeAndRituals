@@ -106,12 +106,19 @@ public class vInkMaker extends LoopingScript {
     private void handleBanking() {
         // Implement your banking logic here
         println("Handling banking...");
-        SceneObject bank = SceneObjectQuery.newQuery().name("Bank booth").option("Load Last Preset from").results().nearest();
-        if (bank == null) {
+        SceneObject bankbooth = SceneObjectQuery.newQuery().name("Bank booth").results().nearest();
+        SceneObject bankchest = SceneObjectQuery.newQuery().name("Bank chest").results().nearest();
+        if (bankbooth == null) {
             println("Bank query was empty.");
         } else {
             println("Yay, we found our bank.");
-            println("Interacted bank: " + bank.interact("Load Last Preset from"));
+            println("Interacted bank: " + bankbooth.interact("Load Last Preset from"));
+        }
+        if (bankchest == null) {
+            println("Bank Chest query was empty.");
+        } else {
+            println("Found Bank Chest");
+            println("Interacted bank: " + bankchest.interact("Load Last Preset from"));
         }
         inkInteracted = false; // Reset the flag when switching to banking state
         setBotState(BotState.MAKING_INK);
