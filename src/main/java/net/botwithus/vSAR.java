@@ -310,7 +310,6 @@ public class vSAR extends LoopingScript {
                 }
             }
         }
-        Execution.delay(random.nextLong(500,750));
         if (playerCurrentAnim == -1 && VarManager.getVarbitValue(53292) == 0) {
             SceneObject interactRitual = ritualStart.first();
             if (interactRitual != null) {
