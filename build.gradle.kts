@@ -24,6 +24,21 @@ configurations {
 tasks.withType<JavaCompile> {
     options.compilerArgs.add("--enable-preview")
 }
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(20))
+    }
+}
+
+tasks.withType<JavaCompile>().configureEach {
+    options.release.set(20)
+}
+
+tasks.withType<Test>().configureEach {
+    javaLauncher.set(javaToolchains.launcherFor {
+        languageVersion.set(JavaLanguageVersion.of(20))
+    })
+}
 
 dependencies {
     implementation("net.botwithus.rs3:botwithus-api:1.0.0-SNAPSHOT")
