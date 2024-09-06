@@ -298,8 +298,14 @@ public class vSAR extends LoopingScript {
                     if(npc.getName().contains("depleted") && !player.isMoving()) {
                         println("Depleted Glyph: " + npc.getName());
                         println("Repairing: " + pedestal.interact("Repair all"));
-                        Execution.delay(random.nextLong(4000,4500));
-                        break; 
+                        if (!npcsinArea.stream().anyMatch(n -> n.getName().contains("depleted"))) {
+                            println("No depleted glyphs detected, continuing with ritual.");
+                            break;
+                        } else {
+                            println("Depleted glyphs detected, delaying.");
+                            Execution.delay(random.nextLong(300, 450));
+                            return;
+                        } 
                     } 
                 }
             }
