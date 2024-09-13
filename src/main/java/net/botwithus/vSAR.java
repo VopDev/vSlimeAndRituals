@@ -10,6 +10,7 @@ import net.botwithus.rs3.game.Area;
 import net.botwithus.rs3.game.Client;
 import net.botwithus.rs3.game.Coordinate;
 import net.botwithus.rs3.game.actionbar.ActionBar;
+import net.botwithus.rs3.game.minimenu.MiniMenu;
 import net.botwithus.rs3.game.minimenu.actions.SelectableAction;
 import net.botwithus.rs3.game.queries.builders.characters.NpcQuery;
 import net.botwithus.rs3.game.queries.builders.components.ComponentQuery;
@@ -145,20 +146,19 @@ public class vSAR extends LoopingScript {
             if (player.isMoving() || player.getAnimationId() != -1)
                 return random.nextLong(1000, 2000);
 
-            if (Backpack.isFull()) {
-                var magicNote = InventoryItemQuery.newQuery().name("Magic notepaper").results().first();
-                var bucketOfSlime = InventoryItemQuery.newQuery().name("Bucket of slime").results().first();
-                if (magicNote != null && bucketOfSlime != null) {
-                    Backpack.interact(magicNote.getId(), "Use"); 
-                    Execution.delay(500);
-                    Backpack.interact(bucketOfSlime.getId(), "Use"); 
-                    Execution.delay(500);
-                } else {
-                    botState = BotState.BANKING;
+                if (Backpack.isFull()) {
+                    var magicNote = InventoryItemQuery.newQuery(93).name("Magic notepaper").results();
+                    var bucketOfSlime = InventoryItemQuery.newQuery(93).name("Bucket of slime").results();
+                    if (magicNote != null && bucketOfSlime != null) {
+                        MiniMenu.interact(SelectableAction.SELECTABLE_COMPONENT.getType(), 0, bucketOfSlime.first().getSlot(), 96534533);  
+                        Execution.delay(random.nextLong(300, 450));
+                        MiniMenu.interact(SelectableAction.SELECT_COMPONENT_ITEM.getType(), 0, magicNote.first().getSlot(), 96534533);
+                    } else {
+                        botState = BotState.BANKING;
+                        return random.nextLong(1000, 2000);
+                    }
                     return random.nextLong(1000, 2000);
                 }
-                return random.nextLong(1000, 2000);
-            }
 
             switch (player.getCoordinate().getRegionId()) {
                 case 14746:
