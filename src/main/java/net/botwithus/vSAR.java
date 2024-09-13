@@ -26,6 +26,7 @@ import net.botwithus.rs3.game.skills.Skills;
 import net.botwithus.rs3.game.vars.VarManager;
 import net.botwithus.rs3.script.Execution;
 import net.botwithus.rs3.script.LoopingScript;
+import net.botwithus.rs3.script.ScriptConsole;
 import net.botwithus.rs3.script.config.ScriptConfig;
 
 import java.util.List;
@@ -148,11 +149,14 @@ public class vSAR extends LoopingScript {
 
                 if (Backpack.isFull()) {
                     var magicNote = InventoryItemQuery.newQuery(93).name("Magic notepaper").results();
-                    var bucketOfSlime = InventoryItemQuery.newQuery(93).name("Bucket of slime").results();
+                    var bucketOfSlime = InventoryItemQuery.newQuery(93).ids(4286).results();
                     if (magicNote != null && bucketOfSlime != null) {
-                        MiniMenu.interact(SelectableAction.SELECTABLE_COMPONENT.getType(), 0, bucketOfSlime.first().getSlot(), 96534533);  
-                        Execution.delay(random.nextLong(300, 450));
-                        MiniMenu.interact(SelectableAction.SELECT_COMPONENT_ITEM.getType(), 0, magicNote.first().getSlot(), 96534533);
+                       boolean itemSelected = MiniMenu.interact(SelectableAction.SELECTABLE_COMPONENT.getType(), 0, bucketOfSlime.first().getSlot(), 96534533);
+                       ScriptConsole.println("[Info] Item selected: " + itemSelected);
+                       Execution.delay(random.nextInt(200, 300));
+                       boolean notepaperSelected = MiniMenu.interact(SelectableAction.SELECT_COMPONENT_ITEM.getType(), 0, magicNote.first().getSlot(), 96534533);
+                       ScriptConsole.println("[Info] Notepaper selected: " + notepaperSelected);
+                       Execution.delay(random.nextInt(200, 300));
                     } else {
                         botState = BotState.BANKING;
                         return random.nextLong(1000, 2000);
