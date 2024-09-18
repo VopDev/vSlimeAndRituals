@@ -44,7 +44,8 @@ public class vSARGraphicsContext extends ScriptGraphicsContext {
                     if (ImGui.Button("Stop")) {
                         script.setBotState(vSAR.BotState.IDLE);
                     }
-                    
+
+                    script.logoutOnNoNotepaper = ImGui.Checkbox("Logout on No Magic Notepaper", script.logoutOnNoNotepaper); 
 
                     ImGui.EndTabItem();
                   

@@ -10,7 +10,9 @@ import net.botwithus.rs3.game.Area;
 import net.botwithus.rs3.game.Client;
 import net.botwithus.rs3.game.Coordinate;
 import net.botwithus.rs3.game.actionbar.ActionBar;
+import net.botwithus.rs3.game.login.LoginManager;
 import net.botwithus.rs3.game.minimenu.MiniMenu;
+import net.botwithus.rs3.game.minimenu.actions.ComponentAction;
 import net.botwithus.rs3.game.minimenu.actions.SelectableAction;
 import net.botwithus.rs3.game.queries.builders.characters.NpcQuery;
 import net.botwithus.rs3.game.queries.builders.components.ComponentQuery;
@@ -81,7 +83,18 @@ public class vSAR extends LoopingScript {
         }
     }
 
-    
+    public boolean logoutOnNoNotepaper = false;
+
+    public void logout() {
+        println("Logging out...");
+        if (Client.getGameState() != Client.GameState.LOGGED_IN) {
+            return;
+        }
+        LoginManager.setAutoLogin(false);
+        MiniMenu.interact(ComponentAction.COMPONENT.getType(), 1, -1, 93913156);
+        Execution.delayUntil(5000, () -> Client.getGameState() != Client.GameState.LOGGED_IN);
+        println("Logged out.");
+    }
 
     @Override
     public void onLoop() {
@@ -157,7 +170,11 @@ public class vSAR extends LoopingScript {
                        boolean notepaperSelected = MiniMenu.interact(SelectableAction.SELECT_COMPONENT_ITEM.getType(), 0, magicNote.getSlot(), 96534533);
                        ScriptConsole.println("[Info] Notepaper selected: " + notepaperSelected);
                        Execution.delay(random.nextInt(200, 300));
+                    } else if (logoutOnNoNotepaper) {
+                        println("No magic notepaper found, logging out.");
+                        logout();
                     } else {
+                        println("No magic notepaper found, banking instead.");
                         botState = BotState.BANKING;
                         return random.nextLong(1000, 2000);
                     }
