@@ -148,13 +148,13 @@ public class vSAR extends LoopingScript {
                 return random.nextLong(1000, 2000);
 
                 if (Backpack.isFull()) {
-                    var magicNote = InventoryItemQuery.newQuery(93).name("Magic notepaper").results();
-                    var bucketOfSlime = InventoryItemQuery.newQuery(93).ids(4286).results();
+                    var magicNote = InventoryItemQuery.newQuery(93).name("Magic notepaper").results().first();
+                    var bucketOfSlime = InventoryItemQuery.newQuery(93).ids(4286).results().first();
                     if (magicNote != null && bucketOfSlime != null) {
-                       boolean itemSelected = MiniMenu.interact(SelectableAction.SELECTABLE_COMPONENT.getType(), 0, bucketOfSlime.first().getSlot(), 96534533);
+                       boolean itemSelected = MiniMenu.interact(SelectableAction.SELECTABLE_COMPONENT.getType(), 0, bucketOfSlime.getSlot(), 96534533);
                        ScriptConsole.println("[Info] Item selected: " + itemSelected);
                        Execution.delay(random.nextInt(200, 300));
-                       boolean notepaperSelected = MiniMenu.interact(SelectableAction.SELECT_COMPONENT_ITEM.getType(), 0, magicNote.first().getSlot(), 96534533);
+                       boolean notepaperSelected = MiniMenu.interact(SelectableAction.SELECT_COMPONENT_ITEM.getType(), 0, magicNote.getSlot(), 96534533);
                        ScriptConsole.println("[Info] Notepaper selected: " + notepaperSelected);
                        Execution.delay(random.nextInt(200, 300));
                     } else {
