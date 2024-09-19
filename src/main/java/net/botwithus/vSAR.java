@@ -1,6 +1,4 @@
 package net.botwithus;
-
-import net.botwithus.vSAR.BotState;
 import net.botwithus.api.game.hud.inventories.Backpack;
 import net.botwithus.api.game.hud.inventories.Bank;
 import net.botwithus.internal.scripts.ScriptDefinition;
@@ -15,7 +13,6 @@ import net.botwithus.rs3.game.minimenu.MiniMenu;
 import net.botwithus.rs3.game.minimenu.actions.ComponentAction;
 import net.botwithus.rs3.game.minimenu.actions.SelectableAction;
 import net.botwithus.rs3.game.queries.builders.characters.NpcQuery;
-import net.botwithus.rs3.game.queries.builders.components.ComponentQuery;
 import net.botwithus.rs3.game.queries.builders.items.InventoryItemQuery;
 import net.botwithus.rs3.game.queries.builders.objects.SceneObjectQuery;
 import net.botwithus.rs3.game.queries.results.EntityResultSet;
@@ -28,11 +25,13 @@ import net.botwithus.rs3.game.skills.Skills;
 import net.botwithus.rs3.game.vars.VarManager;
 import net.botwithus.rs3.script.Execution;
 import net.botwithus.rs3.script.LoopingScript;
-import net.botwithus.rs3.script.ScriptConsole;
 import net.botwithus.rs3.script.config.ScriptConfig;
+import net.botwithus.rs3.game.login.World;
+import net.botwithus.rs3.game.queries.builders.worlds.WorldQuery;
 
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 public class vSAR extends LoopingScript {
     private final Random random = new Random();
@@ -63,7 +62,7 @@ public class vSAR extends LoopingScript {
 
             subscribe(ChatMessageEvent.class, chatMessageEvent -> {
                 if (chatMessageEvent.getMessage().contains("Your components do not all have the required")) {
-                    println("You seem to be out of resources, stopping script.");
+                    println("[Failsafe] Out of resources to repair glyphs, stopping script.");
                     botState = BotState.IDLE;
                 }
             }
@@ -84,16 +83,23 @@ public class vSAR extends LoopingScript {
     }
 
     public boolean logoutOnNoNotepaper = false;
+    public boolean worldhop = false;
+    public boolean devmode = false;
+    private long lastWorldHopTime = 0;
 
     public void logout() {
-        println("Logging out...");
+        println("[Failsafe] Logging out...");
         if (Client.getGameState() != Client.GameState.LOGGED_IN) {
             return;
         }
         LoginManager.setAutoLogin(false);
         MiniMenu.interact(ComponentAction.COMPONENT.getType(), 1, -1, 93913156);
+        if (devmode) {
+            println("Developer mode enabled, preventing logout.");
+            return;
+        }
         Execution.delayUntil(5000, () -> Client.getGameState() != Client.GameState.LOGGED_IN);
-        println("Logged out.");
+        println("[Failsafe] Logged out.");
     }
 
     @Override
@@ -106,21 +112,31 @@ public class vSAR extends LoopingScript {
             }
             switch (botState) {
                 case COLLECTING:
+                    if (devmode) {
+                        println("[DEV] Switching to collecting state.");
+                    }
                     Execution.delay(handleSkilling(player));
                     return;
                 case BANKING:
+                    if (devmode) {
+                        println("[DEV] Switching to banking state.");
+                    }
                     Execution.delay(handleBanking(player));
                     return;
                 case RITUALS:
+                    if (devmode) {
+                        println("[DEV] Switching to rituals state.");
+                    }
                     Execution.delay(random.nextLong(450,900));
                     handleRituals();
+                    return;
                 default:
-                    println("Unexpected bot state, report to author!");
+                   return;
             }
-            Execution.delay(random.nextLong(2000, 4000));
         } catch (Exception e) {
-            println("Error during onLoop: " + e.getMessage());
-            
+            if (devmode) {
+                println("[DEV] Error during onLoop: " + e.getMessage());
+            }
         }
     }
 
@@ -131,26 +147,28 @@ public class vSAR extends LoopingScript {
 
             if (Bank.isOpen()) {
                 Bank.loadPreset(bankPreset);
-                println("Bank preset loaded");
+                println("[BankHandler] Bank preset loaded");
                 botState = BotState.COLLECTING;
             } else {
                 SceneObject sceneObject = SceneObjectQuery.newQuery().name("Bank chest").option("Use").results().nearest();
                 if (sceneObject != null) {
                     sceneObject.interact("Use");
                 } else {
-                    println("No bank chest found.");
+                    println("[BankHandler] No bank chest found.");
                 }
             }
             if (player.getCoordinate().getRegionId() != 13214) {
                 boolean use = ActionBar.useTeleport("War's Retreat Teleport");
                 if (use) {
-                    println("Teleported to War's Retreat");
+                    println("[BankHandler] Teleported to War's Retreat");
                     Execution.delay(random.nextLong(1000, 2000));
                 }
             }
             return random.nextLong(1000, 3000);
         } catch (Exception e) {
-            println("Error during handleBanking: " + e.getMessage());
+            if (devmode) {
+                println("[DEV] Error during handleBanking: " + e.getMessage());
+            }
             return random.nextLong(1000, 3000); 
         }
     }
@@ -161,23 +179,27 @@ public class vSAR extends LoopingScript {
                 return random.nextLong(1000, 2000);
 
                 if (Backpack.isFull()) {
-                    var magicNote = InventoryItemQuery.newQuery(93).name("Magic notepaper").results().first();
+                    var magicNote = InventoryItemQuery.newQuery(93)
+                    .name("Magic notepaper")
+                    .or(InventoryItemQuery.newQuery(93).name("Enchanted notepaper"))
+                    .results().first();
                     var bucketOfSlime = InventoryItemQuery.newQuery(93).ids(4286).results().first();
                     if (magicNote != null && bucketOfSlime != null) {
                        boolean itemSelected = MiniMenu.interact(SelectableAction.SELECTABLE_COMPONENT.getType(), 0, bucketOfSlime.getSlot(), 96534533);
-                       ScriptConsole.println("[Info] Item selected: " + itemSelected);
+                       println("[SlimeCollection] Item selected: " + itemSelected);
                        Execution.delay(random.nextInt(200, 300));
                        boolean notepaperSelected = MiniMenu.interact(SelectableAction.SELECT_COMPONENT_ITEM.getType(), 0, magicNote.getSlot(), 96534533);
-                       ScriptConsole.println("[Info] Notepaper selected: " + notepaperSelected);
+                       println("[SlimeCollection] Notepaper selected: " + notepaperSelected);
                        Execution.delay(random.nextInt(200, 300));
                     } else if (logoutOnNoNotepaper) {
-                        println("No magic notepaper found, logging out.");
+                        println("[SlimeCollection] No magic notepaper found, logging out.");
                         logout();
                     } else {
-                        println("No magic notepaper found, banking instead.");
+                        println("[SlimeCollection] No magic notepaper found, banking instead.");
                         botState = BotState.BANKING;
                         return random.nextLong(1000, 2000);
                     }
+                    worldhopping(); // check for world hop at the end of the slime collection
                     return random.nextLong(1000, 2000);
                 }
 
@@ -196,14 +218,18 @@ public class vSAR extends LoopingScript {
 
             return random.nextLong(1000, 3000);
         } catch (Exception e) {
-            println("Error during handleSkilling: " + e.getMessage());
+            if (devmode) {
+                println("[DEV] Error during handleSkilling: " + e.getMessage());
+            }
             return random.nextLong(1000, 3000); 
         }
     }
 
     private void handleRegion14746() {
         try {
-            println("Handling region 14746...");
+            if (devmode) {
+                println("[DEV] Handling region 14746...");
+            }
             List<Coordinate> stairsCoordinates = List.of(
                 new Coordinate(3689, 9887, 3),
                 new Coordinate(3672, 9887, 2),
@@ -216,12 +242,17 @@ public class vSAR extends LoopingScript {
             if (player != null) {
                 int playerZ = player.getCoordinate().getZ();
                 if (Skills.AGILITY.getLevel() >= 58 && playerZ == 3) {
+                    if (devmode) {
+                        println("[DEV] Players agility level: " + Skills.AGILITY.getLevel());
+                    }
                     Coordinate shortcutCoordinate = agilityShortcut.stream().filter(it -> it.getZ() == playerZ).findFirst().orElse(null);
                     if (shortcutCoordinate != null) {
                         SceneObject shortcut = SceneObjectQuery.newQuery().results().nearestTo(shortcutCoordinate);
                         if (shortcut != null && shortcut.getCoordinate().equals(shortcutCoordinate)) {
                             shortcut.interact("Jump-down");
-                            println("Used shortcut at " + shortcutCoordinate);
+                            if (devmode) {
+                                println("[DEV] Used shortcut at " + shortcutCoordinate);
+                            }
                         }
                     }
                 } else {
@@ -231,12 +262,18 @@ public class vSAR extends LoopingScript {
                         if (stairs != null) {
                             if (stairs.getCoordinate().equals(stairsCoordinate)) {
                                 stairs.interact("Climb-down");
-                                println("Used stairs at " + stairsCoordinate);
+                                if (devmode) {
+                                    println("[DEV] Used stairs at " + stairsCoordinate);
+                                }
                             } else {
-                                println("Found stairs at different coordinate: " + stairs.getCoordinate());
+                                if (devmode) {
+                                    println("[DEV] Found stairs at different coordinate: " + stairs.getCoordinate());
+                                }
                             }
                         } else {
-                            println("No stairs found at " + stairsCoordinate);
+                            if (devmode) {
+                                println("[DEV] No stairs found at " + stairsCoordinate);
+                            }
                         }
                     }
                 }
@@ -246,16 +283,20 @@ public class vSAR extends LoopingScript {
             int playerZ = player.getCoordinate().getZ();
             if (pool != null && playerZ == pool.getCoordinate().getZ()) { 
                 pool.interact("Use slime");
-                println("Used slime");
+                println("[SlimeCollection] Gathered slime from pool.");
             }
         } catch (Exception e) {
-            println("Error during handleRegion14746: " + e.getMessage());
+            if (devmode) {
+                println("[DEV] Error during handleRegion14746: " + e.getMessage());
+            }
         }
     }
 
     private void handleRegion14646And14647() {
-        try {
-            println("Looking for and interacting with a trapdoor...");
+        try { 
+            if (devmode) {
+                println("[DEV] Looking for and interacting with a trapdoor...");
+            }
             var trapdoors = SceneObjectQuery.newQuery().name("Trapdoor").results();
             var climbDownTrapdoor = trapdoors.stream().filter(it -> it.getOptions().contains("Climb-down")).findFirst().orElse(null);
             var openTrapdoor = trapdoors.stream().filter(it -> it.getOptions().contains("Open")).findFirst().orElse(null);
@@ -263,22 +304,32 @@ public class vSAR extends LoopingScript {
             if (climbDownTrapdoor != null) {
                 boolean success = climbDownTrapdoor.interact("Climb-down");
                 if (success) {
-                    println("Climbed down trapdoor");
+                if (devmode) {
+                    println("[DEV] Climbed down trapdoor");
+                }
                     Execution.delay(random.nextLong(1000, 2000));
                 } else {
-                    println("Failed to climb down trapdoor");
+                    if (devmode) {
+                        println("[DEV] Failed to climb down trapdoor");
+                    }
                 }
             } else if (openTrapdoor != null) {
                 boolean success = openTrapdoor.interact("Open");
                 if (success) {
-                    println("Opened trapdoor");
+                    if (devmode) {
+                        println("[DEV] Opened trapdoor");
+                    }
                     Execution.delay(random.nextLong(1000, 2000));
                 } else {
-                    println("Failed to open trapdoor");
+                    if (devmode) {
+                    println("[DEV] Failed to open trapdoor");
+                    }
                 }
             }
         } catch (Exception e) {
-            println("Error during handleRegion14646And14647: " + e.getMessage());
+            if (devmode) {
+                println("[DEV] Error during handleRegion14646And14647: " + e.getMessage());
+            }
         }
     }
 
@@ -288,15 +339,38 @@ public class vSAR extends LoopingScript {
             if (ectoPhial != null) {
                 boolean use = Backpack.interact("Ectophial");
                 if (use) {
-                    println("Used ectophial");
+                        println("[SlimeCollection] Used ectophial");
                     Execution.delay(random.nextLong(1000, 2000));
                 }
             } else {
-                println("Ectophial not found in inventory.");
+                if (devmode) {
+                    println("[DEV] Ectophial not found in inventory.");
+                }
             }
         } catch (Exception e) {
-            println("Error during useEctophial: " + e.getMessage());
-           
+            if (devmode) {
+                println("[DEV] Error during useEctophial: " + e.getMessage());
+            }
+        }
+    }
+
+
+    public void worldhopping() {
+        if (!worldhop) { // Check if worldhop is true
+            return; 
+        }
+        long randomOffset = random.nextLong(TimeUnit.MINUTES.toMillis(10), TimeUnit.MINUTES.toMillis(30)); 
+        if (System.currentTimeMillis() - lastWorldHopTime < TimeUnit.MINUTES.toMillis(200) + randomOffset) { 
+            return; 
+        }
+        lastWorldHopTime = System.currentTimeMillis(); 
+        WorldQuery worlds = WorldQuery.newQuery().members().mark();
+        World world = worlds.results().random();
+
+        if (world != null) {
+            println("[Worldhop] Hoping to world: " + world);
+            LoginManager.hopWorld(world);
+            Execution.delay(8000);
         }
     }
 
@@ -307,20 +381,22 @@ public class vSAR extends LoopingScript {
         int playerCurrentAnim = Client.getLocalPlayer().getAnimationId();
 
         if(VarManager.getVarbitValue(53292) == 0) {
-            println("Checking Glyph Health...");
+            println("[Rituals] Checking Glyph Health...");
             if (npcsinArea.isEmpty()) {
-                println("No NPCs found in the area.");
+                println("[Rituals] No NPCs found in the area.");
             } else {
                 for(Npc npc: npcsinArea) {
-                    println("Checking NPC: " + npc.getName()); 
+                    if (devmode) {
+                        println("[DEV] Checking NPC: " + npc.getName()); 
+                    }
                     if(npc.getName().contains("depleted") && !player.isMoving()) {
-                        println("Depleted Glyph: " + npc.getName());
-                        println("Repairing: " + pedestal.interact("Repair all"));
+                        println("[Rituals] Depleted Glyph: " + npc.getName());
+                        println("[Rituals] Repairing: " + pedestal.interact("Repair all"));
                         if (!npcsinArea.stream().anyMatch(n -> n.getName().contains("depleted"))) {
-                            println("No depleted glyphs detected, continuing with ritual.");
+                            println("[Rituals] No depleted glyphs detected, continuing with ritual.");
                             break;
                         } else {
-                            println("Depleted glyphs detected, delaying.");
+                            println("[Rituals] Depleted glyphs detected, delaying.");
                             Execution.delay(random.nextLong(300, 450));
                             return;
                         } 
@@ -331,14 +407,14 @@ public class vSAR extends LoopingScript {
         if (playerCurrentAnim == -1 && VarManager.getVarbitValue(53292) == 0) {
             SceneObject interactRitual = ritualStart.first();
             if (interactRitual != null) {
-                println("Interacted Ritual: " + interactRitual.interact("Start ritual"));
+                println("[Rituals] Interacted Ritual: " + interactRitual.interact("Start ritual"));
                 Execution.delay(random.nextLong(3000,4500));
             }
         } else while (VarManager.getVarbitValue(53292) != 0) {
-            println("Currently in ritual - delaying."); 
+            println("[Rituals] Currently in ritual - delaying."); 
             Execution.delay(random.nextLong(3000,4500));
         }
-       
+       worldhopping(); // check for world hop at the end of the ritual
     }
 
     

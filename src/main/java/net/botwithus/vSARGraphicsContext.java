@@ -1,10 +1,5 @@
 package net.botwithus;
 
-
-import java.text.NumberFormat;
-
-import net.botwithus.vSAR.BotState;
-import net.botwithus.rs3.game.skills.Skills;
 import net.botwithus.rs3.imgui.ImGui;
 import net.botwithus.rs3.imgui.ImGuiWindowFlag;
 import net.botwithus.rs3.script.ScriptConsole;
@@ -13,14 +8,11 @@ import net.botwithus.rs3.script.ScriptGraphicsContext;
 public class vSARGraphicsContext extends ScriptGraphicsContext {
 
     private vSAR script;
-    public int TheivingXPStart;
-    public int TheivingXPGained = 0;
-    public int bankPresetIndex = 0; // Add this line to declare the variable
+    public int bankPresetIndex = 0; 
 
     public vSARGraphicsContext(ScriptConsole scriptConsole, vSAR script) {
         super(scriptConsole);
         this.script = script;
-        this.TheivingXPStart = Skills.THIEVING.getSkill().getExperience();
     }
 
     @Override
@@ -63,7 +55,13 @@ public class vSARGraphicsContext extends ScriptGraphicsContext {
                         script.setBotState(vSAR.BotState.IDLE);
                     }
                     
-            }
+                 }
+                if (ImGui.BeginTabItem("Extra Settings", ImGuiWindowFlag.None.getValue())) {
+                    script.worldhop = ImGui.Checkbox("Enable Worldhopping", script.worldhop);
+                    script.devmode = ImGui.Checkbox("Developer Mode", script.devmode);
+                
+                    ImGui.EndTabItem();
+                }
         }
             ImGui.EndTabBar();
             ImGui.End(); 
