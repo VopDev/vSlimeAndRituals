@@ -54,17 +54,18 @@ public class vSARGraphicsContext extends ScriptGraphicsContext {
                     if (ImGui.Button("Stop")) {
                         script.setBotState(vSAR.BotState.IDLE);
                     }
-                    
-                 }
+                    ImGui.EndTabItem();
+                }
+       
                 if (ImGui.BeginTabItem("Extra Settings", ImGuiWindowFlag.None.getValue())) {
                     script.worldhop = ImGui.Checkbox("Enable Worldhopping", script.worldhop);
                     script.devmode = ImGui.Checkbox("Developer Mode", script.devmode);
-                
-                    ImGui.EndTabItem();
-                }
-        }
-            ImGui.EndTabBar();
-            ImGui.End(); 
+                    ImGui.EndTabItem(); // Ensure to close the tab item
+                } 
+                ImGui.EndTabItem();
+                ImGui.EndTabBar(); // Ensure to close the tab bar
+            }
+            ImGui.End(); // Ensure to close the window
         } 
     }
 
