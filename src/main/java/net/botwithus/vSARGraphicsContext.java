@@ -60,12 +60,12 @@ public class vSARGraphicsContext extends ScriptGraphicsContext {
                 if (ImGui.BeginTabItem("Extra Settings", ImGuiWindowFlag.None.getValue())) {
                     script.worldhop = ImGui.Checkbox("Enable Worldhopping", script.worldhop);
                     script.devmode = ImGui.Checkbox("Developer Mode", script.devmode);
-                    ImGui.EndTabItem(); // Ensure to close the tab item
+                    ImGui.EndTabItem(); 
                 } 
                 ImGui.EndTabItem();
-                ImGui.EndTabBar(); // Ensure to close the tab bar
+                ImGui.EndTabBar(); 
             }
-            ImGui.End(); // Ensure to close the window
+            ImGui.End(); 
         } 
     }
 

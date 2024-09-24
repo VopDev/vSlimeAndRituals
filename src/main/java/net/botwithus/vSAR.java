@@ -357,7 +357,7 @@ public class vSAR extends LoopingScript {
 
 
     public void worldhopping() {
-        if (!worldhop) { // Check if worldhop is true
+        if (!worldhop) { 
             return; 
         }
         long randomOffset = random.nextLong(TimeUnit.MINUTES.toMillis(10), TimeUnit.MINUTES.toMillis(30)); 
@@ -366,15 +366,15 @@ public class vSAR extends LoopingScript {
         }
         lastWorldHopTime = System.currentTimeMillis(); 
         WorldQuery worlds = WorldQuery.newQuery().members().mark();
-              List<Integer> allowedWorlds = Arrays.asList(1, 2, 4, 5, 6, 9, 10, 12, 14, 16, 21, 22, 23, 24, 25, 26, 27, 28, 31, 32, 35, 36, 37, 39, 40, 42, 44, 45,
+            List<Integer> allowedWorlds = Arrays.asList(1, 4, 5, 6, 9, 10, 12, 14, 16, 21, 22, 23, 24, 25, 26, 27, 28, 31, 32, 35, 36, 37, 39, 40, 42, 44, 45,
             46, 49, 50, 51, 53, 54, 56, 58, 59, 60, 62, 63, 64, 65, 67, 68, 69, 70, 71, 72, 73, 74, 76, 77, 78, 79, 82, 83,
-            84, 85, 87, 88, 89, 91, 92, 96, 98, 99, 100, 103, 104, 105, 106, 116, 117, 119, 123, 124, 138, 139,
+            85, 87, 88, 89, 91, 92, 96, 98, 99, 100, 103, 104, 105, 106, 116, 117, 119, 123, 124, 138, 139,
             140, 252, 257, 258, 259);
         
         World world = worlds.results().stream()
-            .filter(w -> allowedWorlds.contains(w.getId())) // Filter by allowed worlds
-            .findFirst() // Get the first matching world
-            .orElse(null); // Handle case where no world is found
+            .filter(w -> allowedWorlds.contains(w.getId())) 
+            .findFirst()
+            .orElse(null);
 
         if (world != null) {
             println("[Worldhop] Hoping to world: " + world);
@@ -423,7 +423,7 @@ public class vSAR extends LoopingScript {
             println("[Rituals] Currently in ritual - delaying."); 
             Execution.delay(random.nextLong(3000,4500));
         }
-       worldhopping(); // check for world hop at the end of the ritual
+       worldhopping(); 
     }
 
     
