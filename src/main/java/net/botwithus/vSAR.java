@@ -401,6 +401,7 @@ public class vSAR extends LoopingScript {
                     if(npc.getName().contains("depleted") && !player.isMoving()) {
                         println("[Rituals] Depleted Glyph: " + npc.getName());
                         println("[Rituals] Repairing: " + pedestal.interact("Repair all"));
+                        Execution.delay(random.nextLong(3500, 4000));
                         if (!npcsinArea.stream().anyMatch(n -> n.getName().contains("depleted"))) {
                             println("[Rituals] No depleted glyphs detected, continuing with ritual.");
                             break;
